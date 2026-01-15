@@ -58,13 +58,13 @@
             
             <div class="flex items-center gap-4">
                 <div id="progress-nav" class="hidden md:flex gap-4 lg:gap-6 overflow-x-auto">
-                    <div class="flex items-center gap-1 text-xs font-bold text-slate-400 whitespace-nowrap" id="nav-1"><span>1. Basis</span></div>
-                    <div class="flex items-center gap-1 text-xs font-bold text-slate-400 whitespace-nowrap" id="nav-2"><span>2. Labor</span></div>
-                    <div class="flex items-center gap-1 text-xs font-bold text-slate-400 whitespace-nowrap" id="nav-3"><span>3. Plus</span></div>
-                    <div class="flex items-center gap-1 text-xs font-bold text-slate-400 whitespace-nowrap" id="nav-4"><span>4. Mal</span></div>
-                    <div class="flex items-center gap-1 text-xs font-bold text-amber-500 whitespace-nowrap hidden" id="nav-6"><span>★ Pixel</span></div>
-                    <div class="flex items-center gap-1 text-xs font-bold text-purple-600 whitespace-nowrap hidden" id="nav-7"><span>★ Hex</span></div>
-                    <div class="flex items-center gap-1 text-xs font-bold text-slate-800 whitespace-nowrap hidden" id="nav-8"><span>★ Finale</span></div>
+                    <div class="flex items-center gap-1 text-xs font-bold text-slate-400 whitespace-nowrap" id="nav-1"><span>1. Bits</span></div>
+                    <div class="flex items-center gap-1 text-xs font-bold text-slate-400 whitespace-nowrap" id="nav-2"><span>2. Decoder</span></div>
+                    <div class="flex items-center gap-1 text-xs font-bold text-slate-400 whitespace-nowrap" id="nav-3"><span>3. Addierer</span></div>
+                    <div class="flex items-center gap-1 text-xs font-bold text-slate-400 whitespace-nowrap" id="nav-4"><span>4. Multiplikator</span></div>
+                    <div class="flex items-center gap-1 text-xs font-bold text-amber-500 whitespace-nowrap hidden" id="nav-6"><span>★ Grafik</span></div>
+                    <div class="flex items-center gap-1 text-xs font-bold text-purple-600 whitespace-nowrap hidden" id="nav-7"><span>★ Hex-Code</span></div>
+                    <div class="flex items-center gap-1 text-xs font-bold text-slate-800 whitespace-nowrap hidden" id="nav-8"><span>★ Master-Check</span></div>
                 </div>
                 
                 <!-- Save Button -->
@@ -113,11 +113,14 @@
 
         <!-- STEP 1: BASIS -->
         <section id="step-1" class="step-content">
-            <div class="mb-8">
-                <span class="text-blue-600 font-bold tracking-widest text-xs uppercase">Station 1</span>
-                <h2 class="text-3xl font-black text-slate-800 mb-2">Lichtschalter & Zahlen</h2>
-                <p class="text-slate-600" id="intro-text-1"></p>
+            <div class="flex items-center justify-between mb-8">
+                <div>
+                    <span class="text-blue-600 font-bold tracking-widest text-xs uppercase">Station 1</span>
+                    <h2 class="text-3xl font-black text-slate-800 mb-2">Das Bit-Prinzip</h2>
+                </div>
+                <button onclick="app.prevStep()" class="text-slate-400 hover:text-slate-600 font-bold text-sm px-3 py-2 rounded-lg hover:bg-slate-100 transition">← Zurück</button>
             </div>
+            <p class="text-slate-600 mb-8" id="intro-text-1"></p>
             
             <div class="bg-slate-900 rounded-3xl p-6 sm:p-10 text-white shadow-2xl mb-8">
                 <div class="text-center mb-8 text-slate-400 text-sm">Tippe auf die Schalter um sie zu aktivieren</div>
@@ -142,11 +145,14 @@
 
         <!-- STEP 2: UMWANDLUNG -->
         <section id="step-2" class="step-content">
-            <div class="mb-8">
-                <span class="text-blue-600 font-bold tracking-widest text-xs uppercase">Station 2</span>
-                <h2 class="text-3xl font-black text-slate-800 mb-2">Das 8-Bit Labor</h2>
-                <p class="text-slate-600">Ein Byte hat 8 Stellen. Schaffst du die Übersetzung?</p>
+            <div class="flex items-center justify-between mb-8">
+                <div>
+                    <span class="text-blue-600 font-bold tracking-widest text-xs uppercase">Station 2</span>
+                    <h2 class="text-3xl font-black text-slate-800 mb-2">Der Zahlen-Dolmetscher</h2>
+                </div>
+                <button onclick="app.prevStep()" class="text-slate-400 hover:text-slate-600 font-bold text-sm px-3 py-2 rounded-lg hover:bg-slate-100 transition">← Zurück</button>
             </div>
+            <p class="text-slate-600 mb-8">Computer arbeiten mit 8-Bit (1 Byte). Kannst du übersetzen?</p>
 
             <div class="grid md:grid-cols-2 gap-6 mb-8">
                 <!-- Task A -->
@@ -179,9 +185,12 @@
 
         <!-- STEP 3: ADDITION -->
         <section id="step-3" class="step-content">
-            <div class="mb-8">
-                <span class="text-blue-600 font-bold tracking-widest text-xs uppercase">Station 3</span>
-                <h2 class="text-3xl font-black text-slate-800 mb-2">Schriftliche Addition</h2>
+            <div class="flex items-center justify-between mb-8">
+                <div>
+                    <span class="text-blue-600 font-bold tracking-widest text-xs uppercase">Station 3</span>
+                    <h2 class="text-3xl font-black text-slate-800 mb-2">Das Rechenwerk (Addition)</h2>
+                </div>
+                <button onclick="app.prevStep()" class="text-slate-400 hover:text-slate-600 font-bold text-sm px-3 py-2 rounded-lg hover:bg-slate-100 transition">← Zurück</button>
             </div>
             
             <div class="bg-blue-50/50 border-l-4 border-blue-500 p-6 rounded-r-xl mb-8 text-sm text-slate-700 leading-relaxed shadow-sm">
@@ -222,11 +231,14 @@
 
         <!-- STEP 4: MULTIPLIKATION -->
         <section id="step-4" class="step-content">
-            <div class="mb-8">
-                <span class="text-orange-500 font-bold tracking-widest text-xs uppercase">Station 4</span>
-                <h2 class="text-3xl font-black text-slate-800 mb-2">Die Schiebe-Maschine</h2>
-                <p class="text-slate-600">Verstehe das Prinzip "Shift & Add" visuell.</p>
+            <div class="flex items-center justify-between mb-8">
+                <div>
+                    <span class="text-orange-500 font-bold tracking-widest text-xs uppercase">Station 4</span>
+                    <h2 class="text-3xl font-black text-slate-800 mb-2">Shift & Add (Multiplikation)</h2>
+                </div>
+                <button onclick="app.prevStep()" class="text-slate-400 hover:text-slate-600 font-bold text-sm px-3 py-2 rounded-lg hover:bg-slate-100 transition">← Zurück</button>
             </div>
+            <p class="text-slate-600 mb-8">Verstehe das Prinzip "Shift & Add" visuell.</p>
 
             <!-- Phase 1 -->
             <div id="mult-phase-1" class="mb-12 transition-all duration-500">
@@ -288,7 +300,7 @@
                 <!-- Bonus Teaser -->
                 <div class="bg-gradient-to-br from-amber-100 to-orange-100 p-8 rounded-3xl border-2 border-orange-200 text-center shadow-lg transform transition hover:scale-[1.02] mb-8">
                     <div class="inline-block bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full mb-4 uppercase tracking-wide">Für Kreative</div>
-                    <h3 class="text-2xl font-black text-orange-900 mb-2">Bonus-Level: Pixel Art</h3>
+                    <h3 class="text-2xl font-black text-orange-900 mb-2">Bonus-Level: Der Grafikspeicher</h3>
                     <p class="text-orange-800/80 mb-6">Wie speichern Computer Bilder? Finde es heraus!</p>
                     <button onclick="app.startBonus()" class="px-8 py-3 bg-orange-600 text-white rounded-xl font-bold shadow-md hover:bg-orange-700 transition flex items-center justify-center gap-2 mx-auto">
                         <span>👾</span> Bonus-Level starten
@@ -309,11 +321,14 @@
 
         <!-- STEP 6: BONUS (PIXEL ART) -->
         <section id="step-6" class="step-content">
-            <div class="mb-8 text-center">
-                <span class="text-amber-500 font-bold tracking-widest text-xs uppercase">Bonus-Level</span>
-                <h2 class="text-3xl font-black text-slate-800 mb-2">Vom Code zum Bild</h2>
-                <p class="text-slate-600 max-w-xl mx-auto">Zeichne das Muster nach, indem du den richtigen Code eingibst! <b>1 = Schwarz</b>, <b>0 = Weiß</b>.</p>
+            <div class="flex items-center justify-between mb-8">
+                <div>
+                    <span class="text-amber-500 font-bold tracking-widest text-xs uppercase">Bonus-Level</span>
+                    <h2 class="text-3xl font-black text-slate-800 mb-2">Vom Code zum Bild</h2>
+                </div>
+                <button onclick="app.prevStep()" class="text-slate-400 hover:text-slate-600 font-bold text-sm px-3 py-2 rounded-lg hover:bg-slate-100 transition">← Zurück</button>
             </div>
+            <p class="text-slate-600 max-w-xl mx-auto mb-8 text-center">Zeichne das Muster nach, indem du den richtigen Code eingibst! <b>1 = Schwarz</b>, <b>0 = Weiß</b>.</p>
 
             <div class="grid md:grid-cols-2 gap-8 items-start max-w-3xl mx-auto">
                 <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm text-center">
@@ -340,11 +355,14 @@
 
         <!-- STEP 7: PROFI (HEXADECIMAL) -->
         <section id="step-7" class="step-content">
-            <div class="mb-8 text-center">
-                <span class="text-purple-600 font-bold tracking-widest text-xs uppercase">Profi-Station 1</span>
-                <h2 class="text-3xl font-black text-slate-800 mb-2">Das Hexadezimalsystem</h2>
-                <p class="text-slate-600 max-w-2xl mx-auto">Informatiker sind faul. Statt <code>1111</code> schreiben sie einfach <code>F</code>. <br>Ein Zeichen (0-9, A-F) ersetzt immer genau 4 Bits (Nibble).</p>
+            <div class="flex items-center justify-between mb-8">
+                <div class="text-center w-full">
+                    <span class="text-purple-600 font-bold tracking-widest text-xs uppercase">Profi-Station 1</span>
+                    <h2 class="text-3xl font-black text-slate-800 mb-2">Profi-Modus: Hexadezimal-Code</h2>
+                </div>
+                <button onclick="app.prevStep()" class="absolute right-4 text-slate-400 hover:text-slate-600 font-bold text-sm px-3 py-2 rounded-lg hover:bg-slate-100 transition">← Zurück</button>
             </div>
+            <p class="text-slate-600 max-w-2xl mx-auto text-center mb-8">Informatiker sind faul. Statt <code>1111</code> schreiben sie einfach <code>F</code>. <br>Ein Zeichen (0-9, A-F) ersetzt immer genau 4 Bits (Nibble).</p>
 
             <div class="max-w-4xl mx-auto bg-white p-6 rounded-3xl border border-slate-200 shadow-sm mb-8">
                 <div class="grid grid-cols-8 sm:grid-cols-16 gap-1 text-[10px] mb-6">
@@ -379,11 +397,14 @@
 
         <!-- STEP 8: FINAL QUIZ -->
         <section id="step-8" class="step-content">
-            <div class="mb-8 text-center">
-                <span class="text-red-500 font-bold tracking-widest text-xs uppercase">Das Finale</span>
-                <h2 class="text-4xl font-black text-slate-800 mb-2">Die Abschlussprüfung</h2>
-                <p class="text-slate-600">Beweise, dass du ein echter Binär-Meister bist.</p>
+            <div class="flex items-center justify-between mb-8">
+                <div class="text-center w-full">
+                    <span class="text-red-500 font-bold tracking-widest text-xs uppercase">Das Finale</span>
+                    <h2 class="text-4xl font-black text-slate-800 mb-2">Finale: Der System-Check</h2>
+                </div>
+                <button onclick="app.prevStep()" class="absolute right-4 text-slate-400 hover:text-slate-600 font-bold text-sm px-3 py-2 rounded-lg hover:bg-slate-100 transition">← Zurück</button>
             </div>
+            <p class="text-slate-600 text-center mb-8">Beweise, dass du ein echter Binär-Meister bist.</p>
 
             <div class="max-w-2xl mx-auto space-y-6">
                 <!-- Q1 -->
@@ -517,6 +538,22 @@
             this.render(); this.autoSetup(); window.scrollTo(0,0);
         },
 
+        prevStep() {
+            if (this.state.step > 0) {
+                this.state.step--;
+                this.saveState();
+                this.render();
+                if(this.state.step === 0) {
+                    document.getElementById('progress-nav').classList.add('hidden');
+                } else if(this.state.step === 1) {
+                    this.setupStep1();
+                } else {
+                    this.autoSetup();
+                }
+                window.scrollTo(0,0);
+            }
+        },
+
         startBonus() { this.state.step = 6; this.saveState(); this.render(); this.setupBonus(); window.scrollTo(0,0); },
         startProfi() { this.state.step = 7; this.saveState(); this.render(); window.scrollTo(0,0); },
 
@@ -557,10 +594,14 @@
 
         /* --- STATION 1 --- */
         setupStep1() {
+            this.state.currentSum = 0; // RESET SUM ON ENTRY
             const isG = this.state.path === 'guided';
             const bits = this.state.path === 'discovery' ? 6 : 4;
             this.state.targetSum = this.state.path === 'discovery' ? 43 : 11;
             document.getElementById('target-display').textContent = this.state.targetSum;
+            document.getElementById('sum-display').textContent = "0";
+            document.getElementById('binary-display').textContent = "0".repeat(bits);
+            
             document.getElementById('intro-text-1').textContent = isG 
                 ? "Jeder Schalter steht für eine Zahl (1, 2, 4, 8...). Kombiniere sie so, dass die Summe 11 ergibt." 
                 : "Finde durch Ausprobieren heraus, welche Werte die Schalter haben. Dein Ziel ist die Summe 43.";
@@ -672,6 +713,7 @@
         setupStep4() {
             const isG = this.state.path === 'guided';
             const sD = this.state.data.step4.sim;
+            this.state.simActiveBits.clear(); // Reset simulation state on entry
             document.getElementById('sim-val1').textContent = sD.v1;
             const s2C = document.getElementById('sim-val2-container'); s2C.innerHTML = '';
             const labels = ["4er", "2er", "1er"];
