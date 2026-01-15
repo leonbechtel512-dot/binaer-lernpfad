@@ -387,7 +387,7 @@ const app = {
                 { bin:['1011','1100'], hex:['B','C'] }
             ]
         },
-        simActiveBits: new Set(),
+        simActiveBits: new Set(), // This will be reset in loadState
         bonusSolution: ['01010', '01010', '00000', '10001', '01110'],
         q3Ans: null
     },
@@ -395,7 +395,18 @@ const app = {
     init() { this.loadState(); this.updateProgress(); },
 
     /* CORE NAVIGATION & STATE */
-    saveState() { localStorage.setItem('binState', JSON.stringify(this.state)); document.getElementById('toast').classList.remove('translate-x-full'); setTimeout(()=>document.getElementById('toast').classList.add('translate-x-full'),2000); },
+    saveState() { 
+        // Only save serializable data
+        const serializableState = {
+            step: this.state.step,
+            path: this.state.path,
+            subStep: this.state.subStep,
+            tasks: this.state.tasks // Assuming tasks don't change dynamically beyond s1
+        };
+        localStorage.setItem('binState', JSON.stringify(serializableState)); 
+        document.getElementById('toast').classList.remove('translate-x-full'); 
+        setTimeout(()=>document.getElementById('toast').classList.add('translate-x-full'),2000); 
+    },
     loadState() {
         const s = localStorage.getItem('binState');
         if(s) { 
@@ -403,7 +414,11 @@ const app = {
                 const loaded = JSON.parse(s);
                 // Schema check: Ensure new structure exists (subStep and tasks.s2 as array)
                 if (loaded.subStep && loaded.tasks && Array.isArray(loaded.tasks.s2)) {
-                    this.state = loaded;
+                    // Merge loaded state into current state to keep non-serializable defaults (like Sets)
+                    this.state = { ...this.state, ...loaded };
+                    // Explicitly reset the Set as it is not serialized
+                    this.state.simActiveBits = new Set(); 
+
                     if(this.state.step > 0) {
                         document.getElementById('restore-msg').classList.remove('hidden');
                         document.getElementById('progress-nav').classList.remove('hidden');
@@ -585,11 +600,13 @@ const app = {
         // Phase 1 (Sim) is only once. If done, show Phase 2 tasks.
         if(!this.state.tasks.step4_1) {
             // Show Phase 1 Sim
+            // Check if step4 data exists, if not re-init (handled in loadState but good safety)
             if (!this.state.data || !this.state.data.step4) {
                  this.state.data = this.state.data || {};
                  this.state.data.step4 = {sim:{v1:'110',v2:'111'}, final:{v1:'111',v2:'11',res:'10101',partials:['1110','111']}};
             }
             const sD = this.state.data.step4.sim;
+            this.state.simActiveBits.clear(); // Reset UI state on entry
             document.getElementById('sim-val1').textContent = sD.v1;
             const s2C = document.getElementById('sim-val2-container'); s2C.innerHTML='';
             for(let i=0; i<sD.v2.length; i++) {
@@ -616,7 +633,7 @@ const app = {
             const rC = document.getElementById('final-partial-rows'); rC.innerHTML='';
             for(let i=0; i<t.v2.length; i++) {
                 const d=document.createElement('div'); d.className="flex items-center gap-2";
-                d.innerHTML=`<span class="text-xs text-slate-400 w-16 text-right">Bit ${t.v2[i]}:</span><input type="text" class="final-p-field bg-slate-800 border border-slate-700 rounded p-2 flex-grow mono text-right" placeholder="...">`;
+                d.innerHTML=`<span class="text-xs text-slate-400 w-16 text-right">Bit ${t.v2[i]}:</span><input type="text" class="final-p-field bg-slate-800 border border-slate-700 rounded p-2 flex-grow mono text-right text-white" placeholder="...">`;
                 rC.appendChild(d);
             }
             document.getElementById('final-mult-res').value="";
@@ -649,8 +666,8 @@ const app = {
         
         let pOk = true;
         pF.forEach((v,i) => {
-            const rowVal = t.v2[i]==='1' ? (t.v1 + '0'.repeat(t.v2.length-1-i)) : '0'; // Logic check? 
-            // Better: use pre-calc partials from task data
+            // Check logic: if bit is 1, row should be (v1 shifted). if 0, row should be 0.
+            // Or simpler: compare against pre-calc partials in t.p
             if(parseInt(v,2) !== parseInt(t.p[i],2)) pOk=false;
         });
 
@@ -711,7 +728,7 @@ const app = {
             disp.appendChild(s);
             
             const inp = document.createElement('input'); 
-            inp.className = `w-16 h-16 text-center text-2xl font-bold bg-slate-800 border-2 ${i%2===0?'border-blue-500':'border-green-500'} rounded-xl uppercase outline-none hex-inp`;
+            inp.className = `w-16 h-16 text-center text-2xl font-bold bg-slate-800 border-2 ${i%2===0?'border-blue-500':'border-green-500'} rounded-xl uppercase outline-none hex-inp text-white`;
             inp.maxLength=1;
             inputs.appendChild(inp);
         });
