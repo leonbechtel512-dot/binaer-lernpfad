@@ -294,7 +294,6 @@
             <div class="mb-4 text-center"><span id="s7-progress" class="task-badge">Code 1 von 3</span></div>
             
             <div class="max-w-4xl mx-auto bg-white p-6 rounded-3xl border border-slate-200 shadow-sm mb-8">
-                <!-- Hex Table omitted for brevity, same as before -->
                 <div class="grid grid-cols-8 sm:grid-cols-16 gap-1 text-[10px] mb-6">
                     <div class="hex-cell hex-head">0</div><div class="hex-cell hex-head">1</div><div class="hex-cell hex-head">2</div><div class="hex-cell hex-head">3</div><div class="hex-cell hex-head">4</div><div class="hex-cell hex-head">5</div><div class="hex-cell hex-head">6</div><div class="hex-cell hex-head">7</div>
                     <div class="hex-cell hex-head">8</div><div class="hex-cell hex-head">9</div><div class="hex-cell hex-head">10</div><div class="hex-cell hex-head">11</div><div class="hex-cell hex-head">12</div><div class="hex-cell hex-head">13</div><div class="hex-cell hex-head">14</div><div class="hex-cell hex-head">15</div>
@@ -399,7 +398,32 @@ const app = {
     saveState() { localStorage.setItem('binState', JSON.stringify(this.state)); document.getElementById('toast').classList.remove('translate-x-full'); setTimeout(()=>document.getElementById('toast').classList.add('translate-x-full'),2000); },
     loadState() {
         const s = localStorage.getItem('binState');
-        if(s) { this.state = JSON.parse(s); if(this.state.step>0) { document.getElementById('restore-msg').classList.remove('hidden'); document.getElementById('progress-nav').classList.remove('hidden'); this.render(); this.autoSetup(); } }
+        if(s) { 
+            try {
+                const loaded = JSON.parse(s);
+                // Schema check: Ensure new structure exists (subStep and tasks.s2 as array)
+                if (loaded.subStep && loaded.tasks && Array.isArray(loaded.tasks.s2)) {
+                    this.state = loaded;
+                    if(this.state.step > 0) {
+                        document.getElementById('restore-msg').classList.remove('hidden');
+                        document.getElementById('progress-nav').classList.remove('hidden');
+                        this.render();
+                        // Re-init dynamic tasks if needed
+                        if(this.state.step >= 1 && this.state.tasks.s1.length === 0) {
+                             this.initTasksS1();
+                        }
+                        if(this.state.step === 1) this.setupStep1();
+                        else this.autoSetup();
+                    }
+                } else {
+                    console.log("Incompatible save found. Resetting.");
+                    localStorage.removeItem('binState');
+                }
+            } catch(e) {
+                console.error("Save file corrupted", e);
+                localStorage.removeItem('binState');
+            }
+        }
     },
     downloadReport() {
         const txt = `Binary Report\nStation: ${this.state.step}\nTasks Completed:\nS1: ${this.state.subStep.s1}\nS2: ${this.state.subStep.s2}\nS3: ${this.state.subStep.s3}`;
@@ -519,6 +543,8 @@ const app = {
     setupStep3() {
         const taskIdx = this.state.subStep.s3;
         const tasks = this.state.tasks.s3;
+        if(taskIdx >= tasks.length) { this.nextStep(); return; } // Safety
+        
         document.getElementById('s3-progress').textContent = `Aufgabe ${taskIdx+1} von ${tasks.length}`;
         const t = tasks[taskIdx];
         
@@ -559,6 +585,10 @@ const app = {
         // Phase 1 (Sim) is only once. If done, show Phase 2 tasks.
         if(!this.state.tasks.step4_1) {
             // Show Phase 1 Sim
+            if (!this.state.data || !this.state.data.step4) {
+                 this.state.data = this.state.data || {};
+                 this.state.data.step4 = {sim:{v1:'110',v2:'111'}, final:{v1:'111',v2:'11',res:'10101',partials:['1110','111']}};
+            }
             const sD = this.state.data.step4.sim;
             document.getElementById('sim-val1').textContent = sD.v1;
             const s2C = document.getElementById('sim-val2-container'); s2C.innerHTML='';
@@ -577,6 +607,8 @@ const app = {
             
             const tIdx = this.state.subStep.s4;
             const tasks = this.state.tasks.s4;
+            if(tIdx >= tasks.length) { this.nextStep(); return; }
+
             document.getElementById('s4-progress').textContent = `Aufgabe ${tIdx+1} von ${tasks.length}`;
             const t = tasks[tIdx];
             
@@ -665,6 +697,8 @@ const app = {
     setupStep7() {
         const tIdx = this.state.subStep.s7;
         const tasks = this.state.tasks.s7;
+        if(tIdx >= tasks.length) { this.nextStep(); return; }
+
         document.getElementById('s7-progress').textContent = `Code ${tIdx+1} von ${tasks.length}`;
         const t = tasks[tIdx];
         
