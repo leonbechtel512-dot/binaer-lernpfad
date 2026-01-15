@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lernpfad: Die Sprache der Computer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=Inter:wght@400;600;800&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .mono { font-family: 'Fira Code', monospace; }
+        .step-content { display: none; opacity: 0; transition: opacity 0.5s ease-in-out; }
+        .step-content.active { display: block; opacity: 1; }
+        
+        .bit-btn { transition: all 0.2s; }
+        .bit-btn.active { background-color: #3b82f6; color: white; box-shadow: 0 0 15px rgba(59, 130, 246, 0.5); transform: scale(1.05); }
+        
+        .carry-input { width: 2rem; height: 2rem; text-align: center; background-color: #1e293b; border: 1px solid #475569; color: #fbbf24; border-radius: 0.375rem; }
+        .carry-input:focus { border-color: #fbbf24; box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.2); }
+        
+        .shift-block { transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .chart-container { position: relative; width: 100%; max-width: 600px; margin: 0 auto; height: 250px; }
+        
+        /* Didaktische Farben */
+        .color-pos-0 { border-color: #ec4899; } 
+        .color-pos-1 { border-color: #8b5cf6; } 
+        .color-pos-2 { border-color: #3b82f6; } 
+        .bg-pos-0 { background-color: #ec4899; }
+        .bg-pos-1 { background-color: #8b5cf6; }
+        .bg-pos-2 { background-color: #3b82f6; }
+        
+        .error-shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; border-color: #ef4444 !important; }
+        @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
+
+        .pixel-grid-btn { width: 100%; aspect-ratio: 1; border-radius: 4px; border: 1px solid #cbd5e1; transition: all 0.1s; }
+        .pixel-on { background-color: #0f172a; border-color: #0f172a; }
+        .pixel-off { background-color: #ffffff; }
+        
+        .rule-card { background: rgba(255,255,255,0.9); padding: 0.5rem; border-radius: 0.5rem; border: 1px solid #e2e8f0; font-family: monospace; text-align: center; }
+        
+        /* Hex Table Style */
+        .hex-cell { border: 1px solid #e2e8f0; padding: 4px; text-align: center; font-size: 0.75rem; font-family: 'Fira Code', monospace; }
+        .hex-head { background-color: #f1f5f9; font-weight: bold; }
+    </style>
+</head>
+<body class="text-slate-900 overflow-x-hidden">
+
+<div class="min-h-screen flex flex-col">
+    <!-- Navbar -->
+    <nav class="bg-white border-b border-slate-200 sticky top-0 z-50 px-4 py-3 shadow-sm">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <span class="text-2xl">👾</span>
+                <span class="font-extrabold tracking-tight text-slate-800 uppercase text-sm sm:text-base">Binary Explorer</span>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <div id="progress-nav" class="hidden md:flex gap-4 lg:gap-6 overflow-x-auto">
+                    <div class="flex items-center gap-1 text-xs font-bold text-slate-400 whitespace-nowrap" id="nav-1"><span>1. Basis</span></div>
+                    <div class="flex items-center gap-1 text-xs font-bold text-slate-400 whitespace-nowrap" id="nav-2"><span>2. Labor</span></div>
+                    <div class="flex items-center gap-1 text-xs font-bold text-slate-400 whitespace-nowrap" id="nav-3"><span>3. Plus</span></div>
+                    <div class="flex items-center gap-1 text-xs font-bold text-slate-400 whitespace-nowrap" id="nav-4"><span>4. Mal</span></div>
+                    <div class="flex items-center gap-1 text-xs font-bold text-amber-500 whitespace-nowrap hidden" id="nav-6"><span>★ Pixel</span></div>
+                    <div class="flex items-center gap-1 text-xs font-bold text-purple-600 whitespace-nowrap hidden" id="nav-7"><span>★ Hex</span></div>
+                    <div class="flex items-center gap-1 text-xs font-bold text-slate-800 whitespace-nowrap hidden" id="nav-8"><span>★ Finale</span></div>
+                </div>
+                
+                <!-- Save Button -->
+                <button onclick="app.downloadReport()" class="flex items-center gap-2 bg-slate-800 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-slate-700 transition shadow-sm ml-2">
+                    <span>💾</span> <span class="hidden sm:inline">Ergebnis speichern</span>
+                </button>
+            </div>
+        </div>
+        <div class="mt-2 w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+            <div id="progress-bar-fill" class="bg-blue-600 h-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+    </nav>
+
+    <main class="flex-grow max-w-4xl w-full mx-auto px-4 py-8 sm:py-12">
+        
+        <!-- Toast Notification -->
+        <div id="toast" class="fixed top-20 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-xl transform translate-x-full transition-transform duration-300 z-50 font-bold flex items-center gap-2">
+            <span>✅</span> <span id="toast-msg">Gespeichert!</span>
+        </div>
+
+        <!-- STEP 0: START -->
+        <section id="step-0" class="step-content active">
+            <div class="text-center mb-12">
+                <h1 class="text-4xl sm:text-5xl font-black text-slate-800 mb-6 tracking-tight">Hallo Informatiker! 👋</h1>
+                <p class="text-slate-600 max-w-2xl mx-auto text-lg leading-relaxed">
+                    Computer verstehen nur Strom an (1) und Strom aus (0). <br>
+                    Heute lernst du, wie man damit rechnet. Wähle deinen Weg:
+                </p>
+                <div id="restore-msg" class="hidden mt-4 bg-blue-50 text-blue-700 px-4 py-2 rounded-lg inline-block text-sm font-bold border border-blue-200">
+                    🔄 Wir haben einen früheren Spielstand geladen!
+                </div>
+            </div>
+            <div class="grid md:grid-cols-2 gap-6">
+                <button onclick="app.selectPath('guided')" class="group p-8 bg-white border-2 border-slate-200 rounded-3xl text-left hover:border-blue-500 transition-all shadow-sm hover:shadow-xl hover:-translate-y-1">
+                    <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">🧭</div>
+                    <h3 class="text-2xl font-bold mb-2 text-slate-800">Geführte Tour</h3>
+                    <p class="text-slate-500 text-sm">Ich möchte Erklärungen, Tipps und sichere Beispiele.</p>
+                </button>
+                <button onclick="app.selectPath('discovery')" class="group p-8 bg-white border-2 border-slate-200 rounded-3xl text-left hover:border-indigo-500 transition-all shadow-sm hover:shadow-xl hover:-translate-y-1">
+                    <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">🚀</div>
+                    <h3 class="text-2xl font-bold mb-2 text-slate-800">Entdecker-Mission</h3>
+                    <p class="text-slate-500 text-sm">Ich möchte Regeln selbst herausfinden. Wenig Hilfe, mehr Rätsel.</p>
+                </button>
+            </div>
+        </section>
+
+        <!-- STEP 1: BASIS -->
+        <section id="step-1" class="step-content">
+            <div class="mb-8">
+                <span class="text-blue-600 font-bold tracking-widest text-xs uppercase">Station 1</span>
+                <h2 class="text-3xl font-black text-slate-800 mb-2">Lichtschalter & Zahlen</h2>
+                <p class="text-slate-600" id="intro-text-1"></p>
+            </div>
+            
+            <div class="bg-slate-900 rounded-3xl p-6 sm:p-10 text-white shadow-2xl mb-8">
+                <div class="text-center mb-8 text-slate-400 text-sm">Tippe auf die Schalter um sie zu aktivieren</div>
+                <div id="switches-ui" class="flex flex-wrap justify-center gap-4 mb-10"></div>
+                
+                <div class="flex justify-between items-end border-t border-slate-700 pt-6">
+                    <div>
+                        <div class="text-[10px] uppercase text-slate-500 font-bold mb-1">Dein Binärcode</div>
+                        <div class="text-slate-300 mono text-2xl tracking-widest" id="binary-display">0000</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-[10px] uppercase text-slate-500 font-bold mb-1">Dezimaler Wert</div>
+                        <div class="text-5xl font-black text-blue-400 mono"><span id="sum-display">0</span> <span class="text-slate-600 text-2xl font-normal">/ <span id="target-display">?</span></span></div>
+                    </div>
+                </div>
+            </div>
+            <div id="feedback-1" class="hidden text-center bg-green-50 p-6 rounded-2xl border border-green-200 animate-bounce-in">
+                <p class="text-green-800 font-bold mb-4">🎉 Klasse! Du hast das Prinzip der Stellenwerte verstanden.</p>
+                <button onclick="app.nextStep()" class="px-8 py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition shadow-lg">Weiter zur Umwandlung ➔</button>
+            </div>
+        </section>
+
+        <!-- STEP 2: UMWANDLUNG -->
+        <section id="step-2" class="step-content">
+            <div class="mb-8">
+                <span class="text-blue-600 font-bold tracking-widest text-xs uppercase">Station 2</span>
+                <h2 class="text-3xl font-black text-slate-800 mb-2">Das 8-Bit Labor</h2>
+                <p class="text-slate-600">Ein Byte hat 8 Stellen. Schaffst du die Übersetzung?</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-6 mb-8">
+                <!-- Task A -->
+                <div class="bg-white p-6 rounded-2xl border-2 border-slate-100 shadow-sm hover:border-blue-100 transition">
+                    <h3 class="font-bold mb-1 text-slate-800">Vom Code zur Zahl</h3>
+                    <p class="text-xs text-slate-400 mb-4">Binär → Dezimal</p>
+                    <div class="text-3xl font-black mono text-center py-4 bg-slate-50 text-slate-700 rounded-xl mb-4" id="val-2a">?</div>
+                    <input type="number" id="input-2a" class="w-full p-3 border-2 rounded-xl mb-2 outline-none focus:border-blue-500 transition" placeholder="Welche Zahl ist das?">
+                    <button onclick="app.checkConversion('a')" class="w-full bg-slate-800 text-white p-3 rounded-xl font-bold hover:bg-slate-700 transition">Prüfen</button>
+                    <div id="msg-2a" class="text-center mt-2 font-bold h-6 text-sm"></div>
+                </div>
+                <!-- Task B -->
+                <div class="bg-white p-6 rounded-2xl border-2 border-slate-100 shadow-sm hover:border-blue-100 transition">
+                    <h3 class="font-bold mb-1 text-slate-800">Von der Zahl zum Code</h3>
+                    <p class="text-xs text-slate-400 mb-4">Dezimal → Binär</p>
+                    <div class="text-3xl font-black mono text-center py-4 bg-slate-50 text-slate-700 rounded-xl mb-4" id="val-2b">?</div>
+                    <input type="text" id="input-2b" class="w-full p-3 border-2 rounded-xl mb-2 mono outline-none focus:border-blue-500 transition" placeholder="0101...">
+                    <button onclick="app.checkConversion('b')" class="w-full bg-slate-800 text-white p-3 rounded-xl font-bold hover:bg-slate-700 transition">Prüfen</button>
+                    <div id="msg-2b" class="text-center mt-2 font-bold h-6 text-sm"></div>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm mb-8">
+                <h4 class="text-sm font-bold text-slate-500 mb-4 text-center">Wachstum der Stellenwerte (Exponentiell)</h4>
+                <div class="chart-container"><canvas id="growthChart"></canvas></div>
+            </div>
+
+            <button id="next-btn-2" onclick="app.nextStep()" class="hidden w-full py-4 bg-blue-600 text-white rounded-2xl font-black shadow-lg hover:bg-blue-700 transition">Weiter zur Addition ➕</button>
+        </section>
+
+        <!-- STEP 3: ADDITION -->
+        <section id="step-3" class="step-content">
+            <div class="mb-8">
+                <span class="text-blue-600 font-bold tracking-widest text-xs uppercase">Station 3</span>
+                <h2 class="text-3xl font-black text-slate-800 mb-2">Schriftliche Addition</h2>
+            </div>
+            
+            <div class="bg-blue-50/50 border-l-4 border-blue-500 p-6 rounded-r-xl mb-8 text-sm text-slate-700 leading-relaxed shadow-sm">
+                <h3 class="font-bold text-blue-800 mb-4 text-lg">💡 Die 4 Regeln der Binär-Addition</h3>
+                <div class="grid grid-cols-2 gap-4 mb-4 font-mono text-center">
+                    <div class="bg-white p-2 rounded border border-slate-200">0 + 0 = <b>0</b></div>
+                    <div class="bg-white p-2 rounded border border-slate-200">0 + 1 = <b>1</b></div>
+                    <div class="bg-white p-2 rounded border border-slate-200">1 + 0 = <b>1</b></div>
+                    <div class="bg-yellow-50 p-2 rounded border border-yellow-200">1 + 1 = <b>0</b> <span class="text-xs text-red-500 block">(Übertrag 1)</span></div>
+                </div>
+                <div class="mt-4 p-3 bg-white rounded border border-blue-100">
+                    <strong class="text-blue-700">📌 Der Übertrag (Carry):</strong><br>
+                    Bei <b>1 + 1 = 10</b> (Ergebnis 2): Schreibe unten die <b>0</b>. Die <b>1</b> ist der Übertrag und muss in das kleine Kästchen der <b>nächsten Spalte links</b>.
+                    <br><br>
+                    <span class="text-xs italic text-slate-500">Sonderfall: 1 + 1 + 1 (Übertrag) = 11 (Schreibe 1, Übertrag 1)</span>
+                </div>
+            </div>
+
+            <div class="bg-slate-900 text-white p-8 sm:p-12 rounded-3xl shadow-2xl max-w-lg mx-auto relative overflow-hidden">
+                <div class="flex flex-col items-end mono relative z-10">
+                    <div class="text-[10px] text-slate-500 uppercase tracking-widest mb-1 pr-1">Übertrag (Carry)</div>
+                    <div class="flex gap-2 sm:gap-4 mb-4 pr-2" id="carry-inputs"></div>
+                    
+                    <div class="text-4xl sm:text-5xl tracking-[0.2em] mb-2 pr-2" id="add-val1">?</div>
+                    <div class="text-4xl sm:text-5xl tracking-[0.2em] border-b-4 border-slate-700 pb-4 mb-6 flex items-center pr-2 w-full justify-end">
+                        <span class="text-2xl text-slate-600 mr-4 absolute left-8">+</span><span id="add-val2">?</span>
+                    </div>
+                    
+                    <input type="text" id="input-add" class="bg-slate-800 text-green-400 text-right text-4xl sm:text-5xl tracking-[0.2em] w-full p-4 rounded-xl outline-none focus:ring-2 focus:ring-green-400 transition" placeholder="?????">
+                </div>
+            </div>
+            <div class="mt-8 text-center">
+                <button onclick="app.checkAddition()" class="px-10 py-4 bg-green-600 text-white rounded-2xl font-black hover:bg-green-700 transition shadow-lg">Ergebnis prüfen</button>
+                <div id="msg-add" class="mt-4 font-bold h-6"></div>
+                <button id="next-btn-3" onclick="app.nextStep()" class="hidden mt-6 w-full py-4 bg-slate-800 text-white rounded-2xl font-bold hover:bg-slate-700 transition">Weiter zur Multiplikation ✖️</button>
+            </div>
+        </section>
+
+        <!-- STEP 4: MULTIPLIKATION -->
+        <section id="step-4" class="step-content">
+            <div class="mb-8">
+                <span class="text-orange-500 font-bold tracking-widest text-xs uppercase">Station 4</span>
+                <h2 class="text-3xl font-black text-slate-800 mb-2">Die Schiebe-Maschine</h2>
+                <p class="text-slate-600">Verstehe das Prinzip "Shift & Add" visuell.</p>
+            </div>
+
+            <!-- Phase 1 -->
+            <div id="mult-phase-1" class="mb-12 transition-all duration-500">
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-6">
+                    <h3 class="font-bold text-slate-800 mb-2">🔬 Experiment: Verschiebung</h3>
+                    <p class="text-sm text-slate-600">Klicke unten auf die farbigen Stellenwerte. Beobachte, wie sich die Zahl verschiebt. Ein Computer macht genau das!</p>
+                </div>
+
+                <div class="bg-slate-900 rounded-3xl p-8 text-white shadow-xl mb-8 border border-slate-800">
+                    <div class="flex flex-col items-center gap-8">
+                        <div class="flex items-center gap-4 sm:gap-6 text-2xl sm:text-3xl mono">
+                            <span class="text-blue-400" id="sim-val1">110</span> 
+                            <span class="text-slate-600">×</span> 
+                            <div id="sim-val2-container" class="flex gap-3 sm:gap-4"></div>
+                        </div>
+                        <div class="w-full border-t border-slate-800 pt-8">
+                            <div id="sim-workspace" class="space-y-3 min-h-[140px] flex flex-col items-end justify-start">
+                                <p class="text-slate-600 italic text-sm w-full text-center py-10" id="sim-empty-msg">Wähle oben eine Stelle aus...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center">
+                    <button onclick="app.checkSimPhase()" id="btn-check-sim" class="hidden px-10 py-4 bg-blue-600 text-white rounded-2xl font-black shadow-xl hover:bg-blue-700 hover:scale-105 transition-all">Prinzip verstanden! Ich will rechnen ➔</button>
+                </div>
+            </div>
+
+            <!-- Phase 2 -->
+            <div id="mult-phase-2" class="opacity-30 pointer-events-none transition-all duration-700 filter blur-sm">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-bold text-slate-800">📝 Jetzt bist du dran</h3>
+                </div>
+                
+                <div class="bg-slate-900 p-8 sm:p-10 rounded-3xl text-white shadow-2xl max-w-xl mx-auto w-full">
+                    <div class="mono text-center text-3xl sm:text-4xl mb-10 text-orange-400 font-bold" id="final-mult-task">?</div>
+                    <div class="space-y-4 mb-8" id="final-partial-rows"></div>
+                    <div class="pt-8 border-t border-slate-700">
+                        <label class="block text-xs uppercase font-bold text-slate-500 mb-3 tracking-widest text-center">Gesamtergebnis</label>
+                        <input type="text" id="final-mult-res" class="w-full bg-slate-800 p-4 border-2 border-slate-700 rounded-2xl mono text-3xl text-center text-green-400 outline-none focus:border-green-400 transition" placeholder="?????">
+                        <button onclick="app.checkFinalMult()" class="w-full mt-6 py-4 bg-orange-600 rounded-2xl font-black text-lg hover:bg-orange-700 transition shadow-lg">Fertig</button>
+                    </div>
+                    <div id="msg-mult-final" class="mt-4 text-center font-bold text-lg h-6"></div>
+                </div>
+            </div>
+
+            <button id="next-btn-4" onclick="app.nextStep()" class="hidden mt-12 w-full py-5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-black text-xl shadow-xl hover:shadow-2xl transition transform hover:-translate-y-1">Zum Abschluss 🚀</button>
+        </section>
+
+        <!-- STEP 5: FINAL & BONUS TEASER -->
+        <section id="step-5" class="step-content">
+            <div class="max-w-2xl mx-auto">
+                <div class="text-center py-12 bg-white rounded-3xl shadow-xl border border-slate-100 mb-10">
+                    <div class="text-8xl mb-6 animate-bounce">🏆</div>
+                    <h2 class="text-4xl font-black text-slate-800 mb-4 tracking-tight">Lernpfad abgeschlossen!</h2>
+                    <p class="text-lg text-slate-500 mb-8 px-6" id="final-summary"></p>
+                    <button onclick="location.reload()" class="text-slate-400 hover:text-slate-600 underline text-sm">Lernpfad neustarten</button>
+                </div>
+
+                <!-- Bonus Teaser -->
+                <div class="bg-gradient-to-br from-amber-100 to-orange-100 p-8 rounded-3xl border-2 border-orange-200 text-center shadow-lg transform transition hover:scale-[1.02] mb-8">
+                    <div class="inline-block bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full mb-4 uppercase tracking-wide">Für Kreative</div>
+                    <h3 class="text-2xl font-black text-orange-900 mb-2">Bonus-Level: Pixel Art</h3>
+                    <p class="text-orange-800/80 mb-6">Wie speichern Computer Bilder? Finde es heraus!</p>
+                    <button onclick="app.startBonus()" class="px-8 py-3 bg-orange-600 text-white rounded-xl font-bold shadow-md hover:bg-orange-700 transition flex items-center justify-center gap-2 mx-auto">
+                        <span>👾</span> Bonus-Level starten
+                    </button>
+                </div>
+
+                <!-- Hardcore Bonus Teaser -->
+                <div class="bg-gradient-to-br from-purple-100 to-indigo-100 p-8 rounded-3xl border-2 border-purple-200 text-center shadow-lg transform transition hover:scale-[1.02]">
+                    <div class="inline-block bg-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full mb-4 uppercase tracking-wide">Für Profis</div>
+                    <h3 class="text-2xl font-black text-purple-900 mb-2">Schwere Bonus-Aufgaben</h3>
+                    <p class="text-purple-800/80 mb-6">Hexadezimal und das große Finale. Traust du dich?</p>
+                    <button onclick="app.startProfi()" class="px-8 py-3 bg-purple-600 text-white rounded-xl font-bold shadow-md hover:bg-purple-700 transition flex items-center justify-center gap-2 mx-auto">
+                        <span>🧬</span> Profi-Modus starten
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- STEP 6: BONUS (PIXEL ART) -->
+        <section id="step-6" class="step-content">
+            <div class="mb-8 text-center">
+                <span class="text-amber-500 font-bold tracking-widest text-xs uppercase">Bonus-Level</span>
+                <h2 class="text-3xl font-black text-slate-800 mb-2">Vom Code zum Bild</h2>
+                <p class="text-slate-600 max-w-xl mx-auto">Zeichne das Muster nach, indem du den richtigen Code eingibst! <b>1 = Schwarz</b>, <b>0 = Weiß</b>.</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-8 items-start max-w-3xl mx-auto">
+                <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm text-center">
+                    <h3 class="font-bold text-slate-700 mb-4">Ziel: Der Smiley</h3>
+                    <div class="grid grid-cols-5 gap-1 w-40 mx-auto aspect-square p-2 bg-slate-100 rounded-lg">
+                        <div class="bg-white rounded-sm"></div><div class="bg-slate-900 rounded-sm"></div><div class="bg-white rounded-sm"></div><div class="bg-slate-900 rounded-sm"></div><div class="bg-white rounded-sm"></div>
+                        <div class="bg-white rounded-sm"></div><div class="bg-slate-900 rounded-sm"></div><div class="bg-white rounded-sm"></div><div class="bg-slate-900 rounded-sm"></div><div class="bg-white rounded-sm"></div>
+                        <div class="bg-white rounded-sm"></div><div class="bg-white rounded-sm"></div><div class="bg-white rounded-sm"></div><div class="bg-white rounded-sm"></div><div class="bg-white rounded-sm"></div>
+                        <div class="bg-slate-900 rounded-sm"></div><div class="bg-white rounded-sm"></div><div class="bg-white rounded-sm"></div><div class="bg-white rounded-sm"></div><div class="bg-slate-900 rounded-sm"></div>
+                        <div class="bg-white rounded-sm"></div><div class="bg-slate-900 rounded-sm"></div><div class="bg-slate-900 rounded-sm"></div><div class="bg-slate-900 rounded-sm"></div><div class="bg-white rounded-sm"></div>
+                    </div>
+                </div>
+                <div class="bg-slate-900 p-6 rounded-3xl shadow-xl text-white">
+                    <h3 class="font-bold text-center mb-4 text-blue-300">Dein Binärcode</h3>
+                    <div id="pixel-rows" class="space-y-3"></div>
+                    <button onclick="app.checkBonus()" class="w-full mt-6 py-3 bg-blue-600 rounded-xl font-bold hover:bg-blue-700 transition">Bild rendern</button>
+                    <div id="bonus-msg" class="text-center mt-4 h-6 font-bold text-sm"></div>
+                </div>
+            </div>
+            <div class="text-center mt-8">
+                <button onclick="app.startProfi()" class="text-slate-500 hover:text-purple-600 underline font-bold">➔ Weiter zu den Profi-Aufgaben</button>
+            </div>
+        </section>
+
+        <!-- STEP 7: PROFI (HEXADECIMAL) -->
+        <section id="step-7" class="step-content">
+            <div class="mb-8 text-center">
+                <span class="text-purple-600 font-bold tracking-widest text-xs uppercase">Profi-Station 1</span>
+                <h2 class="text-3xl font-black text-slate-800 mb-2">Das Hexadezimalsystem</h2>
+                <p class="text-slate-600 max-w-2xl mx-auto">Informatiker sind faul. Statt <code>1111</code> schreiben sie einfach <code>F</code>. <br>Ein Zeichen (0-9, A-F) ersetzt immer genau 4 Bits (Nibble).</p>
+            </div>
+
+            <div class="max-w-4xl mx-auto bg-white p-6 rounded-3xl border border-slate-200 shadow-sm mb-8">
+                <div class="grid grid-cols-8 sm:grid-cols-16 gap-1 text-[10px] mb-6">
+                    <div class="hex-cell hex-head">0</div><div class="hex-cell hex-head">1</div><div class="hex-cell hex-head">2</div><div class="hex-cell hex-head">3</div>
+                    <div class="hex-cell hex-head">4</div><div class="hex-cell hex-head">5</div><div class="hex-cell hex-head">6</div><div class="hex-cell hex-head">7</div>
+                    <div class="hex-cell hex-head">8</div><div class="hex-cell hex-head">9</div><div class="hex-cell hex-head">10</div><div class="hex-cell hex-head">11</div>
+                    <div class="hex-cell hex-head">12</div><div class="hex-cell hex-head">13</div><div class="hex-cell hex-head">14</div><div class="hex-cell hex-head">15</div>
+                    
+                    <div class="hex-cell">0</div><div class="hex-cell">1</div><div class="hex-cell">2</div><div class="hex-cell">3</div>
+                    <div class="hex-cell">4</div><div class="hex-cell">5</div><div class="hex-cell">6</div><div class="hex-cell">7</div>
+                    <div class="hex-cell">8</div><div class="hex-cell">9</div><div class="hex-cell font-bold text-purple-600">A</div><div class="hex-cell font-bold text-purple-600">B</div>
+                    <div class="hex-cell font-bold text-purple-600">C</div><div class="hex-cell font-bold text-purple-600">D</div><div class="hex-cell font-bold text-purple-600">E</div><div class="hex-cell font-bold text-purple-600">F</div>
+                </div>
+
+                <div class="bg-slate-900 rounded-2xl p-8 text-center text-white">
+                    <h3 class="font-bold text-purple-300 mb-6 uppercase tracking-widest">Hacker Challenge</h3>
+                    <p class="text-sm text-slate-400 mb-2">Übersetze diesen Binärcode in Hex:</p>
+                    <div class="text-4xl mono tracking-widest mb-6">
+                        <span class="text-blue-400">1101</span> <span class="text-green-400">1010</span>
+                    </div>
+                    <div class="flex justify-center gap-4 items-center">
+                        <input type="text" id="hex-1" class="w-16 h-16 text-center text-2xl font-bold bg-slate-800 border-2 border-blue-500 rounded-xl uppercase outline-none focus:bg-slate-700" maxlength="1" placeholder="?">
+                        <input type="text" id="hex-2" class="w-16 h-16 text-center text-2xl font-bold bg-slate-800 border-2 border-green-500 rounded-xl uppercase outline-none focus:bg-slate-700" maxlength="1" placeholder="?">
+                    </div>
+                    <button onclick="app.checkHex()" class="mt-8 px-8 py-3 bg-purple-600 hover:bg-purple-700 rounded-xl font-bold transition shadow-lg">Code knacken</button>
+                    <div id="hex-msg" class="mt-4 font-bold h-6"></div>
+                </div>
+            </div>
+            
+            <button id="next-btn-hex" onclick="app.nextStep()" class="hidden w-full max-w-md mx-auto block py-4 bg-slate-800 text-white rounded-2xl font-black shadow-lg hover:bg-black transition">Zum großen Finale 🏁</button>
+        </section>
+
+        <!-- STEP 8: FINAL QUIZ -->
+        <section id="step-8" class="step-content">
+            <div class="mb-8 text-center">
+                <span class="text-red-500 font-bold tracking-widest text-xs uppercase">Das Finale</span>
+                <h2 class="text-4xl font-black text-slate-800 mb-2">Die Abschlussprüfung</h2>
+                <p class="text-slate-600">Beweise, dass du ein echter Binär-Meister bist.</p>
+            </div>
+
+            <div class="max-w-2xl mx-auto space-y-6">
+                <!-- Q1 -->
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm quiz-card" id="q1">
+                    <h4 class="font-bold text-slate-700 mb-2">Frage 1: Umwandlung</h4>
+                    <p class="text-sm mb-4">Welche Dezimalzahl verbirgt sich hinter <code>0010 1101</code>?</p>
+                    <input type="number" id="ans-q1" class="w-full p-3 border rounded-xl outline-none focus:border-blue-500" placeholder="Deine Antwort">
+                </div>
+
+                <!-- Q2 -->
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm quiz-card" id="q2">
+                    <h4 class="font-bold text-slate-700 mb-2">Frage 2: Rechnen</h4>
+                    <p class="text-sm mb-4">Was ergibt <code>1010 + 0110</code> (Binär)?</p>
+                    <input type="text" id="ans-q2" class="w-full p-3 border rounded-xl outline-none focus:border-blue-500 mono" placeholder="Deine Antwort">
+                </div>
+
+                <!-- Q3 -->
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm quiz-card" id="q3">
+                    <h4 class="font-bold text-slate-700 mb-2">Frage 3: Logik</h4>
+                    <p class="text-sm mb-4">Wie viele verschiedene Zahlen kann man mit 5 Bit darstellen?</p>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="app.selectQuizOpt(this, 16)" class="quiz-opt p-3 border rounded-xl hover:bg-slate-50">16</button>
+                        <button onclick="app.selectQuizOpt(this, 32)" class="quiz-opt p-3 border rounded-xl hover:bg-slate-50">32</button>
+                        <button onclick="app.selectQuizOpt(this, 64)" class="quiz-opt p-3 border rounded-xl hover:bg-slate-50">64</button>
+                    </div>
+                </div>
+
+                <button onclick="app.checkFinalQuiz()" class="w-full py-4 bg-slate-900 text-white rounded-2xl font-black shadow-xl hover:scale-105 transition">Prüfung abgeben</button>
+                <div id="quiz-result" class="text-center font-bold text-xl mt-4 hidden"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="p-8 text-center text-slate-400 text-xs font-bold uppercase tracking-widest bg-white border-t border-slate-100 mt-10">
+        Informatik EF
+    </footer>
+</div>
+
+<script>
+    const app = {
+        state: {
+            step: 0, path: '', currentSum: 0, targetSum: 0,
+            tasks: { step2: [false, false], step3: false, step4_1: false, step4_2: false },
+            data: { step2:{a:'',b:''}, step3:{v1:'',v2:'',res:'',carries:''}, step4:{sim:{v1:'110',v2:'111'}, final:{v1:'111',v2:'11',res:'10101',partials:['1110','111']}} },
+            simActiveBits: new Set(),
+            bonusSolution: ['01010', '01010', '00000', '10001', '01110'],
+            q3Ans: null,
+            finishedSteps: [] // New tracking for saved progress
+        },
+
+        init() { 
+            this.loadState();
+            this.updateProgress(); 
+        },
+
+        /* --- PERSISTENCE --- */
+        saveState() {
+            const data = {
+                step: this.state.step,
+                path: this.state.path,
+                tasks: this.state.tasks,
+                finishedSteps: this.state.finishedSteps
+            };
+            localStorage.setItem('binaryMasteryState', JSON.stringify(data));
+            
+            // Show toast
+            const toast = document.getElementById('toast');
+            toast.classList.remove('translate-x-full');
+            setTimeout(() => toast.classList.add('translate-x-full'), 2000);
+        },
+
+        loadState() {
+            const saved = localStorage.getItem('binaryMasteryState');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                this.state.step = parsed.step || 0;
+                this.state.path = parsed.path || '';
+                this.state.tasks = parsed.tasks || this.state.tasks;
+                this.state.finishedSteps = parsed.finishedSteps || [];
+                
+                if(this.state.step > 0) {
+                    document.getElementById('restore-msg').classList.remove('hidden');
+                    document.getElementById('progress-nav').classList.remove('hidden');
+                    this.render();
+                    // Re-init specific steps based on where we left off
+                    if(this.state.step === 1) this.setupStep1();
+                    else this.autoSetup();
+                }
+            }
+        },
+
+        downloadReport() {
+            const now = new Date().toLocaleString('de-DE');
+            const mode = this.state.path === 'guided' ? 'Geführt' : (this.state.path === 'discovery' ? 'Entdecker' : 'Nicht gewählt');
+            
+            let report = `Lernpfad Bericht: Binary Explorer\n`;
+            report += `=================================\n`;
+            report += `Datum: ${now}\n`;
+            report += `Modus: ${mode}\n`;
+            report += `Aktuelle Station: ${this.state.step}\n\n`;
+            
+            report += `Fortschritt Details:\n`;
+            report += `- Station 2 (Umwandlung): ${this.state.tasks.step2[0] && this.state.tasks.step2[1] ? 'Erledigt ✅' : 'Offen'}\n`;
+            report += `- Station 3 (Addition): ${this.state.tasks.step3 ? 'Erledigt ✅' : 'Offen'}\n`;
+            report += `- Station 4 (Multiplikation): ${this.state.tasks.step4_2 ? 'Erledigt ✅' : 'Offen'}\n`;
+            
+            // Simple file download trigger
+            const blob = new Blob([report], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `binär-report-${new Date().toISOString().slice(0,10)}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        },
+
+        selectPath(p) {
+            this.state.path = p; this.state.step = 1;
+            document.getElementById('progress-nav').classList.remove('hidden');
+            this.saveState();
+            this.render(); this.setupStep1();
+        },
+
+        nextStep() {
+            this.state.step++;
+            if(this.state.step === 5 || this.state.step === 8) confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
+            this.saveState();
+            this.render(); this.autoSetup(); window.scrollTo(0,0);
+        },
+
+        startBonus() { this.state.step = 6; this.saveState(); this.render(); this.setupBonus(); window.scrollTo(0,0); },
+        startProfi() { this.state.step = 7; this.saveState(); this.render(); window.scrollTo(0,0); },
+
+        autoSetup() {
+            if(this.state.step === 2) this.setupStep2();
+            if(this.state.step === 3) this.setupStep3();
+            if(this.state.step === 4) this.setupStep4();
+            if(this.state.step === 5) this.setupStep5();
+        },
+
+        render() {
+            document.querySelectorAll('.step-content').forEach(s => s.classList.remove('active'));
+            document.getElementById(`step-${this.state.step}`).classList.add('active');
+            
+            // Nav Update
+            const navs = ['nav-1', 'nav-2', 'nav-3', 'nav-4', 'nav-6', 'nav-7', 'nav-8'];
+            navs.forEach((id, idx) => {
+                const el = document.getElementById(id);
+                if(!el) return;
+                // Simple logic for nav highlighting
+                let stepMap = [1,2,3,4,6,7,8]; // Corresponding steps
+                if(this.state.step === stepMap[idx]) el.className = el.className.replace('text-slate-400', 'text-blue-600').replace('text-slate-800', 'text-blue-600');
+            });
+            
+            if(this.state.step >= 6) document.getElementById('nav-6').classList.remove('hidden');
+            if(this.state.step >= 7) document.getElementById('nav-7').classList.remove('hidden');
+            if(this.state.step >= 8) document.getElementById('nav-8').classList.remove('hidden');
+            
+            this.updateProgress();
+        },
+
+        updateProgress() {
+            const max = 8;
+            document.getElementById('progress-bar-fill').style.width = `${(this.state.step / max) * 100}%`;
+        },
+
+        cleanBin(v) { return v.replace(/\s+/g, '').replace(/[^01]/g, '') || ''; },
+
+        /* --- STATION 1 --- */
+        setupStep1() {
+            const isG = this.state.path === 'guided';
+            const bits = this.state.path === 'discovery' ? 6 : 4;
+            this.state.targetSum = this.state.path === 'discovery' ? 43 : 11;
+            document.getElementById('target-display').textContent = this.state.targetSum;
+            document.getElementById('intro-text-1').textContent = isG 
+                ? "Jeder Schalter steht für eine Zahl (1, 2, 4, 8...). Kombiniere sie so, dass die Summe 11 ergibt." 
+                : "Finde durch Ausprobieren heraus, welche Werte die Schalter haben. Dein Ziel ist die Summe 43.";
+            
+            const ui = document.getElementById('switches-ui'); ui.innerHTML = '';
+            for(let i=bits-1; i>=0; i--) {
+                const val = Math.pow(2,i);
+                const d = document.createElement('div'); d.className = "text-center";
+                d.innerHTML = `<div class="text-[10px] mb-2 font-bold text-slate-500">${isG?val:'?'}</div>
+                    <button onclick="app.toggleBit(this,${val})" class="bit-btn w-12 h-16 sm:w-14 sm:h-20 bg-slate-800 rounded-xl flex items-center justify-center font-black text-xl text-slate-500 border-b-4 border-slate-950">0</button>`;
+                ui.appendChild(d);
+            }
+        },
+        toggleBit(btn, v) {
+            btn.classList.toggle('active');
+            const on = btn.classList.contains('active');
+            btn.textContent = on ? '1' : '0';
+            btn.classList.toggle('text-white', on);
+            this.state.currentSum += (on ? v : -v);
+            document.getElementById('sum-display').textContent = this.state.currentSum;
+            document.getElementById('binary-display').textContent = Array.from(document.querySelectorAll('.bit-btn')).map(b=>b.textContent).join('');
+            if(this.state.currentSum === this.state.targetSum) {
+                confetti({ particleCount: 50, spread: 50, origin: { y: 0.7 } });
+                document.getElementById('feedback-1').classList.remove('hidden');
+                this.saveState();
+            }
+        },
+
+        /* --- STATION 2 --- */
+        setupStep2() {
+            const isG = this.state.path === 'guided';
+            this.state.data.step2 = { a: isG?'25':'201', b: isG?'10111':'10000001' };
+            document.getElementById('val-2a').textContent = isG?'00011001':'11001001';
+            document.getElementById('val-2b').textContent = isG?'23':'129';
+            this.renderChart();
+        },
+        checkConversion(k) {
+            const i = document.getElementById('input-2'+k);
+            const m = document.getElementById('msg-2'+k);
+            const u = this.cleanBin(i.value);
+            const c = this.state.data.step2[k];
+            
+            let ok = false;
+            if(k==='a') ok = parseInt(i.value.trim()) === parseInt(c); 
+            else ok = parseInt(u, 2) === parseInt(c, 2); 
+
+            if(ok) {
+                m.textContent = "✅ Richtig!"; m.className = "text-green-600 mt-2 font-bold text-sm";
+                this.state.tasks.step2[k==='a'?0:1] = true;
+                i.classList.add('border-green-500');
+                this.saveState();
+            } else {
+                m.textContent = "❌ Versuch es nochmal"; m.className = "text-red-500 mt-2 font-bold text-sm";
+                i.classList.add('error-shake'); setTimeout(()=>i.classList.remove('error-shake'),400);
+            }
+            if(this.state.tasks.step2[0] && this.state.tasks.step2[1]) document.getElementById('next-btn-2').classList.remove('hidden');
+        },
+        renderChart() {
+            const ctx = document.getElementById('growthChart').getContext('2d');
+            new Chart(ctx, { type:'bar', data: { labels:['1','2','3','4','5','6','7','8'], datasets:[{label:'Wert', data:[1,2,4,8,16,32,64,128], backgroundColor:'#3b82f6', borderRadius:4}] }, options:{maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}} });
+        },
+
+        /* --- STATION 3 --- */
+        setupStep3() {
+            const isG = this.state.path === 'guided';
+            this.state.data.step3 = isG ? {v1:'1011',v2:'0110',res:'10001',carries:'11100'} : {v1:'11011',v2:'10111',res:'110010',carries:'111110'};
+            
+            document.getElementById('add-val1').textContent = this.state.data.step3.v1;
+            document.getElementById('add-val2').textContent = this.state.data.step3.v2;
+            const c = document.getElementById('carry-inputs'); c.innerHTML = '';
+            const len = Math.max(this.state.data.step3.v1.length, this.state.data.step3.res.length);
+            for(let i=0; i<len; i++) { 
+                const inp = document.createElement('input'); 
+                inp.className = 'carry-input'; 
+                inp.id='carry-'+(len-1-i); 
+                inp.placeholder = "0"; 
+                c.appendChild(inp); 
+            }
+        },
+        checkAddition() {
+            const uR = this.cleanBin(document.getElementById('input-add').value);
+            const cR = this.state.data.step3.res;
+            
+            let uC = ""; 
+            const len = Math.max(this.state.data.step3.v1.length, cR.length);
+            for(let i=len-1; i>=0; i--) {
+                uC += (document.getElementById('carry-'+i).value.trim() || '0');
+            }
+            
+            uC = uC.replace(/^0+/, '') || '0';
+            const targetC = this.state.data.step3.carries.replace(/^0+/, '') || '0';
+
+            const m = document.getElementById('msg-add');
+            
+            if(parseInt(uR, 2) === parseInt(cR, 2) && uC === targetC) {
+                m.textContent = "✅ Fantastisch!"; m.className="text-green-600 mt-4 font-bold";
+                confetti({ particleCount: 50, origin: { y: 0.8 } });
+                this.state.tasks.step3 = true;
+                this.saveState();
+                document.getElementById('next-btn-3').classList.remove('hidden');
+            } else if (parseInt(uR, 2) === parseInt(cR, 2)) {
+                m.textContent = "⚠️ Ergebnis stimmt, aber die Überträge fehlen oder sind falsch."; m.className="text-orange-500 mt-4 font-bold";
+            } else {
+                m.textContent = "❌ Prüfe die Rechnung."; m.className="text-red-500 mt-4 font-bold";
+            }
+        },
+
+        /* --- STATION 4 --- */
+        setupStep4() {
+            const isG = this.state.path === 'guided';
+            const sD = this.state.data.step4.sim;
+            document.getElementById('sim-val1').textContent = sD.v1;
+            const s2C = document.getElementById('sim-val2-container'); s2C.innerHTML = '';
+            const labels = ["4er", "2er", "1er"];
+            for(let i=0; i<sD.v2.length; i++) {
+                const bV = sD.v2[i]; const sP = sD.v2.length-1-i;
+                const d = document.createElement('div'); d.className="flex flex-col items-center gap-1";
+                const b = document.createElement('button');
+                b.className = `w-10 h-10 sm:w-12 sm:h-12 rounded-xl border-2 flex items-center justify-center font-bold text-xl transition-all ${bV==='0'?'opacity-20 cursor-not-allowed border-slate-600':'cursor-pointer border-slate-500 hover:scale-110 color-pos-'+sP}`;
+                b.textContent = bV; b.onclick = () => this.toggleSimBit(b, sP, bV);
+                const l = document.createElement('span'); l.className="text-[10px] uppercase font-bold text-slate-500"; l.textContent = labels[i];
+                d.appendChild(b); d.appendChild(l); s2C.appendChild(d);
+            }
+            // Phase 2
+            this.state.data.step4.final = isG ? {v1:'110',v2:'11',res:'10010',partials:['1100','110']} : {v1:'111',v2:'101',res:'100011',partials:['11100','0000','111']};
+            const fT = this.state.data.step4.final;
+            document.getElementById('final-mult-task').textContent = `${fT.v1} × ${fT.v2}`;
+            const rows = document.getElementById('final-partial-rows'); rows.innerHTML = '';
+            const fL = fT.v2.length===2?['2er','1er']:['4er','2er','1er'];
+            for(let i=0; i<fT.v2.length; i++) {
+                const d = document.createElement('div'); d.className="flex items-center gap-3";
+                d.innerHTML = `<span class="text-slate-400 text-xs w-24 text-right mono font-bold">${fL[i]} Stelle:</span><input type="text" class="final-p-field bg-slate-800 border border-slate-700 rounded-xl p-3 flex-grow mono text-right text-lg outline-none focus:border-blue-500 transition" placeholder="Code...">`;
+                rows.appendChild(d);
+            }
+        },
+        toggleSimBit(btn, s, b) {
+            if(b==='0') return;
+            const ws = document.getElementById('sim-workspace');
+            document.getElementById('sim-empty-msg')?.remove();
+            if(this.state.simActiveBits.has(s)) {
+                btn.classList.remove('bg-pos-'+s,'text-white','border-transparent');
+                document.getElementById('block-shift-'+s).remove();
+                this.state.simActiveBits.delete(s);
+            } else {
+                btn.classList.add('bg-pos-'+s,'text-white','border-transparent');
+                this.state.simActiveBits.add(s);
+                const div = document.createElement('div'); div.id='block-shift-'+s; div.className="flex items-center gap-1 animate-fadeIn";
+                let h = `<span class="text-[10px] text-slate-500 mr-2 italic">Shift ${s}</span><span class="bg-pos-${s} px-3 py-1 rounded text-white font-bold tracking-widest">${this.state.data.step4.sim.v1}</span>`;
+                for(let k=0; k<s; k++) h+=`<span class="bg-slate-800 px-2 py-1 rounded text-slate-600 font-bold">0</span>`;
+                div.innerHTML = h; ws.appendChild(div);
+            }
+            if(this.state.simActiveBits.size === 3) {
+                this.state.tasks.step4_1 = true;
+                this.saveState();
+                document.getElementById('btn-check-sim').classList.remove('hidden');
+            }
+        },
+        checkSimPhase() {
+            document.getElementById('mult-phase-2').classList.remove('opacity-30', 'pointer-events-none', 'filter', 'blur-sm');
+            document.getElementById('btn-check-sim').classList.replace('bg-blue-600', 'bg-green-600');
+            document.getElementById('btn-check-sim').textContent = "✓ Prinzip verstanden";
+            setTimeout(() => document.getElementById('mult-phase-2').scrollIntoView({behavior:'smooth'}), 200);
+        },
+        checkFinalMult() {
+            const fD = this.state.data.step4.final;
+            const fields = document.querySelectorAll('.final-p-field');
+            const pF = Array.from(fields).map(f => this.cleanBin(f.value));
+            
+            let allOK = true;
+            pF.forEach((v,i) => {
+                const t = parseInt(fD.partials[i], 2);
+                const u = v === '' ? 0 : parseInt(v, 2); 
+                if(u !== t) { allOK = false; fields[i].classList.add('error-shake'); setTimeout(()=>fields[i].classList.remove('error-shake'),400); }
+                else fields[i].classList.replace('border-slate-700','border-green-500');
+            });
+            
+            const uR = parseInt(this.cleanBin(document.getElementById('final-mult-res').value), 2);
+            const cR = parseInt(fD.res, 2);
+            const m = document.getElementById('msg-mult-final');
+            
+            if(uR === cR && allOK) {
+                m.textContent = "✅ Ausgezeichnet!"; m.className="text-green-500 font-bold";
+                confetti({ particleCount: 150, spread: 60 });
+                this.state.tasks.step4_2 = true;
+                this.saveState();
+                document.getElementById('next-btn-4').classList.remove('hidden');
+            } else if (uR === cR) {
+                m.textContent = "⚠️ Ergebnis stimmt, aber Zeilen prüfen!"; m.className="text-orange-500 font-bold";
+            } else {
+                m.textContent = "❌ Noch nicht ganz."; m.className="text-red-500 font-bold";
+            }
+        },
+
+        /* --- STATION 5 --- */
+        setupStep5() {
+            document.getElementById('final-summary').textContent = this.state.path === 'guided' 
+                ? "Du hast Schritt für Schritt gelernt, wie Computer ticken. Das ist eine tolle Leistung!"
+                : "Du hast dich durchgebissen und die Regeln selbst geknackt. Respekt!";
+        },
+
+        /* --- STATION 6 (BONUS) --- */
+        setupBonus() {
+            const rows = document.getElementById('pixel-rows'); rows.innerHTML = '';
+            for(let i=0; i<5; i++) {
+                const div = document.createElement('div'); div.className = "flex items-center gap-4";
+                div.innerHTML = `<span class="text-slate-400 font-mono text-xs w-16">Zeile ${i+1}:</span>
+                <input type="text" class="bonus-row bg-slate-800 border border-slate-700 rounded-lg p-2 flex-grow mono text-center tracking-widest outline-none focus:border-blue-500 transition" maxlength="5" placeholder="00000" onkeyup="app.updateBonusPreview()">`;
+                rows.appendChild(div);
+            }
+            this.updateBonusPreview();
+        },
+        updateBonusPreview() {
+            const p = document.getElementById('user-preview-grid'); p.innerHTML = '';
+            const inputs = document.querySelectorAll('.bonus-row');
+            inputs.forEach(inp => {
+                const val = inp.value.padEnd(5, '0');
+                for(let char of val) {
+                    const d = document.createElement('div');
+                    d.className = `w-full aspect-square rounded-sm ${char==='1'?'bg-slate-900':'bg-white border border-slate-200'}`;
+                    p.appendChild(d);
+                }
+            });
+        },
+        checkBonus() {
+            const inputs = Array.from(document.querySelectorAll('.bonus-row')).map(i => i.value);
+            const sol = this.state.bonusSolution;
+            let correct = true;
+            inputs.forEach((v,i) => { if(v !== sol[i]) correct = false; });
+            const m = document.getElementById('bonus-msg');
+            if(correct) {
+                m.textContent = "👾 Wow! Ein perfekter Smiley!"; m.className="text-green-400 font-bold";
+                confetti({ particleCount: 300, spread: 100, startVelocity: 40 });
+            } else {
+                m.textContent = "🤔 Das sieht noch nicht ganz nach dem Smiley aus."; m.className="text-orange-400 font-bold";
+            }
+        },
+
+        /* --- STATION 7: HEXADECIMAL (NEW) --- */
+        checkHex() {
+            const h1 = document.getElementById('hex-1').value.trim().toUpperCase();
+            const h2 = document.getElementById('hex-2').value.trim().toUpperCase();
+            // 1101 = D, 1010 = A
+            const msg = document.getElementById('hex-msg');
+            if(h1 === 'D' && h2 === 'A') {
+                msg.textContent = "✅ Korrekt! 11011010 = DA"; msg.className="text-green-400 font-bold text-lg";
+                confetti({ particleCount: 200, spread: 120 });
+                document.getElementById('next-btn-hex').classList.remove('hidden');
+            } else {
+                msg.textContent = "❌ Falsch. 1101 ist 13 (D), 1010 ist 10 (A)."; msg.className="text-red-400 font-bold text-lg";
+            }
+        },
+
+        /* --- STATION 8: FINAL QUIZ (NEW) --- */
+        selectQuizOpt(btn, val) {
+            document.querySelectorAll('.quiz-opt').forEach(b => b.classList.remove('bg-slate-200', 'border-slate-400'));
+            btn.classList.add('bg-slate-200', 'border-slate-400');
+            this.state.q3Ans = val;
+        },
+        checkFinalQuiz() {
+            // Q1: 0010 1101 = 32 + 8 + 4 + 1 = 45
+            const q1 = parseInt(document.getElementById('ans-q1').value);
+            // Q2: 1010 + 0110 = 10 + 6 = 16 = 10000
+            const q2 = this.cleanBin(document.getElementById('ans-q2').value);
+            
+            let score = 0;
+            if(q1 === 45) { score++; document.getElementById('q1').classList.add('border-green-500'); }
+            else document.getElementById('q1').classList.add('border-red-500');
+
+            if(parseInt(q2, 2) === 16) { score++; document.getElementById('q2').classList.add('border-green-500'); }
+            else document.getElementById('q2').classList.add('border-red-500');
+
+            if(this.state.q3Ans === 32) { score++; document.getElementById('q3').classList.add('border-green-500'); } // 2^5 = 32
+            else document.getElementById('q3').classList.add('border-red-500');
+
+            const r = document.getElementById('quiz-result');
+            r.classList.remove('hidden');
+            if(score === 3) {
+                r.textContent = "🏆 3/3 Richtig! Du bist ein wahrer Meister!";
+                r.className = "text-center font-black text-2xl text-green-600 mt-6";
+                confetti({ particleCount: 500, spread: 360, startVelocity: 60 });
+            } else {
+                r.textContent = `Ergebnis: ${score}/3 Richtig.`;
+                r.className = "text-center font-bold text-xl text-slate-700 mt-6";
+            }
+        }
+    };
+    window.onload = () => app.init();
+</script>
+</body>
+</html>
