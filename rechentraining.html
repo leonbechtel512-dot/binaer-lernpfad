@@ -1,1 +1,471 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binäres Rechen-Zentrum</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=Inter:wght@400;600;800&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; color: #1e293b; }
+        .mono { font-family: 'Fira Code', monospace; }
+        
+        /* Input Styles */
+        .carry-input {
+            width: 2rem; height: 2rem;
+            text-align: center;
+            font-size: 0.9rem;
+            border: 2px solid #cbd5e1;
+            border-radius: 6px;
+            background-color: #fff;
+            color: #d97706; /* Amber for Carry */
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .carry-input:focus { border-color: #d97706; outline: none; background-color: #fffbeb; }
+        .carry-input::placeholder { color: #e2e8f0; font-weight: normal; }
 
+        .result-input {
+            width: 100%;
+            padding: 0.75rem;
+            font-size: 1.5rem;
+            letter-spacing: 0.3em;
+            text-align: right;
+            border: 2px solid #cbd5e1;
+            border-radius: 8px;
+            background-color: #fff;
+            font-family: 'Fira Code', monospace;
+            outline: none;
+        }
+        .result-input:focus { border-color: #3b82f6; }
+
+        /* NEU: Einzelne Zellen für Multiplikation */
+        .mult-cell {
+            width: 2.5rem; height: 3rem;
+            text-align: center;
+            font-size: 1.25rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            background-color: #fff;
+            font-family: 'Fira Code', monospace;
+            transition: all 0.2s;
+            margin-left: 4px;
+        }
+        .mult-cell:focus { border-color: #3b82f6; outline: none; z-index: 10; transform: scale(1.05); }
+        .mult-cell.error { border-color: #ef4444; background-color: #fef2f2; }
+        .mult-cell.success { border-color: #22c55e; background-color: #f0fdf4; }
+
+        .row-input {
+            background-color: #f8fafc;
+            border: 1px solid #cbd5e1;
+            padding: 0.5rem;
+            border-radius: 6px;
+            font-family: 'Fira Code', monospace;
+            text-align: right;
+            width: 100%;
+            transition: border-color 0.2s;
+        }
+        .row-input:focus { border-color: #3b82f6; outline: none; background-color: #fff; }
+
+        /* Animations */
+        .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake { 10%, 90% { transform: translateX(-1px); } 20%, 80% { transform: translateX(2px); } 30%, 50%, 70% { transform: translateX(-4px); } 40%, 60% { transform: translateX(4px); } }
+        
+        .fade-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .step-active { background-color: #3b82f6; color: white; border-color: #3b82f6; }
+        .step-inactive { background-color: white; color: #64748b; border-color: #e2e8f0; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-8 px-4">
+
+    <!-- Header -->
+    <header class="text-center mb-8 max-w-2xl w-full">
+        <div class="inline-flex items-center justify-center p-3 bg-slate-900 text-white rounded-2xl mb-4 shadow-lg">
+            <span class="text-2xl mr-2">🧮</span>
+            <span class="font-bold tracking-tight">Binary <span class="text-blue-400">Deep Dive</span></span>
+        </div>
+        <h1 class="text-3xl font-black text-slate-800 mb-2">Rechen-Labor</h1>
+        <p class="text-slate-500">Training für die nächste Stunde</p>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <div class="flex gap-4 mb-8 w-full max-w-xl">
+        <button onclick="app.switchMode('add')" id="tab-add" class="flex-1 py-4 rounded-xl border-2 font-bold text-lg shadow-sm transition-all transform hover:-translate-y-1 step-active">
+            ➕ 1. Addition
+        </button>
+        <button onclick="app.switchMode('mult')" id="tab-mult" class="flex-1 py-4 rounded-xl border-2 font-bold text-lg shadow-sm transition-all transform hover:-translate-y-1 step-inactive">
+            ✖️ 2. Multiplikation
+        </button>
+    </div>
+
+    <!-- MAIN CARD -->
+    <main class="bg-white w-full max-w-xl rounded-3xl shadow-xl border border-slate-200 overflow-hidden relative min-h-[500px]">
+        
+        <!-- Progress Bar -->
+        <div class="h-2 bg-slate-100 w-full">
+            <div id="progress-bar" class="h-full bg-blue-500 transition-all duration-500" style="width: 0%"></div>
+        </div>
+
+        <!-- Content Area -->
+        <div class="p-8">
+            
+            <!-- LEVEL INFO -->
+            <div class="flex justify-between items-center mb-6">
+                <span class="text-xs font-bold uppercase tracking-widest text-slate-400" id="mode-label">MODUL: ADDITION</span>
+                <span class="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-bold">Level <span id="level-num">1</span>/3</span>
+            </div>
+
+            <!-- RULES DISPLAY (NEW) -->
+            <div id="rules-area" class="mb-8">
+                <!-- Dynamically filled by JS -->
+            </div>
+
+            <!-- WORKSPACE -->
+            <div id="workspace" class="fade-in">
+                <!-- Dynamic Content goes here -->
+            </div>
+
+            <!-- ACTION AREA -->
+            <div class="mt-8 pt-6 border-t border-slate-100">
+                <button onclick="app.check()" class="w-full py-4 bg-slate-900 text-white rounded-xl font-bold text-lg shadow-lg hover:bg-slate-800 transition active:scale-95">
+                    Überprüfen
+                </button>
+                <div id="feedback" class="mt-4 text-center font-bold min-h-[24px]"></div>
+                <button id="next-btn" onclick="app.nextLevel()" class="hidden w-full mt-4 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold transition">
+                    Nächste Aufgabe ➔
+                </button>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        const app = {
+            mode: 'add',
+            level: 0,
+            
+            // DATA: THE CURRICULUM
+            curriculum: {
+                add: [
+                    { 
+                        title: "Einfacher Übertrag",
+                        v1: "1010", v2: "0011", res: "1101", carry: "00100" 
+                    },
+                    { 
+                        title: "Die Kaskade",
+                        v1: "0011", v2: "0001", res: "0100", carry: "00110" 
+                    },
+                    { 
+                        title: "Der Dreier-Stoß",
+                        v1: "0111", v2: "0011", res: "1010", carry: "01110" 
+                    }
+                ],
+                mult: [
+                    { 
+                        title: "Einfacher Shift",
+                        v1: "110", v2: "10", res: "1100", partials: ["1100", "000"] 
+                    },
+                    { 
+                        title: "Addieren & Schieben",
+                        v1: "101", v2: "11", res: "1111", partials: ["1010", "101"] 
+                    },
+                    { 
+                        title: "Die Lücke",
+                        v1: "111", v2: "101", res: "100011", partials: ["11100", "00000", "111"] 
+                    }
+                ]
+            },
+
+            init() {
+                this.render();
+            },
+
+            switchMode(m) {
+                this.mode = m;
+                this.level = 0;
+                
+                // Update Tabs
+                document.getElementById('tab-add').className = m === 'add' 
+                    ? "flex-1 py-4 rounded-xl border-2 font-bold text-lg shadow-sm transition-all transform hover:-translate-y-1 step-active"
+                    : "flex-1 py-4 rounded-xl border-2 font-bold text-lg shadow-sm transition-all transform hover:-translate-y-1 step-inactive";
+                
+                document.getElementById('tab-mult').className = m === 'mult' 
+                    ? "flex-1 py-4 rounded-xl border-2 font-bold text-lg shadow-sm transition-all transform hover:-translate-y-1 step-active"
+                    : "flex-1 py-4 rounded-xl border-2 font-bold text-lg shadow-sm transition-all transform hover:-translate-y-1 step-inactive";
+
+                this.render();
+            },
+
+            nextLevel() {
+                if (this.level < 2) {
+                    this.level++;
+                    this.render();
+                } else {
+                    // Celebration & Reset
+                    confetti({ particleCount: 200, spread: 100 });
+                    alert("Modul abgeschlossen! Großartige Arbeit.");
+                    this.level = 0;
+                    this.render();
+                }
+            },
+
+            renderRules(container) {
+                container.innerHTML = "";
+                if (this.mode === 'add') {
+                    // Add rules title
+                    container.innerHTML = `<h3 class="text-sm font-bold text-slate-500 mb-3 uppercase tracking-wider text-center">Die 4 Regeln der Addition</h3>`;
+                    
+                    const rulesGrid = document.createElement('div');
+                    rulesGrid.className = "grid grid-cols-2 gap-3 mb-4";
+                    
+                    const rules = [
+                        { eq: "0 + 0", res: "0", note: "Kein Übertrag" },
+                        { eq: "0 + 1", res: "1", note: "Kein Übertrag" },
+                        { eq: "1 + 0", res: "1", note: "Kein Übertrag" },
+                        { eq: "1 + 1", res: "0", note: "Übertrag: 1", highlight: true }
+                    ];
+
+                    rules.forEach(r => {
+                        const card = document.createElement('div');
+                        card.className = `p-3 rounded-xl border-2 text-center shadow-sm transition-transform hover:scale-105 ${r.highlight ? 'bg-amber-50 border-amber-300 text-amber-900 ring-2 ring-amber-100' : 'bg-white border-slate-100 text-slate-600'}`;
+                        card.innerHTML = `
+                            <div class="text-xl font-mono font-bold mb-1">${r.eq} = ${r.res}</div>
+                            <div class="text-[10px] uppercase font-bold tracking-wider ${r.highlight ? 'text-amber-600' : 'text-slate-400'}">${r.note}</div>
+                        `;
+                        rulesGrid.appendChild(card);
+                    });
+                    
+                    container.appendChild(rulesGrid);
+                    
+                    const extraRule = document.createElement('div');
+                    extraRule.className = "text-center text-xs text-blue-600 font-medium bg-blue-50 p-2 rounded-lg border border-blue-100";
+                    extraRule.innerHTML = "Sonderfall: <strong>1 + 1 + 1 = 1</strong> (Ergebnis) und <strong>1</strong> (Übertrag)";
+                    container.appendChild(extraRule);
+
+                } else {
+                    // Mult rules
+                    const div = document.createElement('div');
+                    div.className = "bg-indigo-50 border-l-4 border-indigo-400 p-4 rounded-r-lg mb-6 text-indigo-900 text-sm shadow-sm";
+                    div.innerHTML = `
+                        <h3 class="font-bold mb-3 uppercase tracking-wide text-xs">Die Shift-Regel</h3>
+                        <div class="space-y-2">
+                            <div class="flex items-center gap-2">
+                                <span class="font-mono bg-white px-2 py-1 rounded border border-indigo-200">× 1</span>
+                                <span>Zahl abschreiben</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-mono bg-white px-2 py-1 rounded border-indigo-200">× 0</span>
+                                <span class="text-slate-500">Nur Nullen (oder Zeile freilassen)</span>
+                            </div>
+                            <div class="mt-2 pt-2 border-t border-indigo-200 text-xs font-bold">
+                                ⚠️ WICHTIG: Für jede Stelle nach links einrücken!
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                }
+            },
+
+            render() {
+                document.getElementById('next-btn').classList.add('hidden');
+                document.getElementById('feedback').textContent = "";
+                document.getElementById('level-num').textContent = this.level + 1;
+                document.getElementById('mode-label').textContent = this.mode === 'add' ? "MODUL: ADDITION" : "MODUL: MULTIPLIKATION";
+                
+                const progress = ((this.level) / 3) * 100;
+                document.getElementById('progress-bar').style.width = `${progress}%`;
+
+                const task = this.curriculum[this.mode][this.level];
+                
+                const rulesArea = document.getElementById('rules-area');
+                this.renderRules(rulesArea);
+
+                const ws = document.getElementById('workspace');
+                ws.innerHTML = ""; 
+
+                if (this.mode === 'add') {
+                    this.renderAddition(ws, task);
+                } else {
+                    this.renderMultiplication(ws, task);
+                }
+            },
+
+            renderAddition(container, task) {
+                const len = Math.max(task.v1.length, task.res.length);
+                
+                const carryRow = document.createElement('div');
+                carryRow.className = "flex justify-end gap-2 mb-2 pr-2";
+                for (let i = 0; i < len; i++) {
+                    const inp = document.createElement('input');
+                    inp.className = "carry-input";
+                    inp.maxLength = 1;
+                    inp.id = `carry-${len-1-i}`;
+                    inp.placeholder = "0"; 
+                    carryRow.appendChild(inp);
+                }
+                container.appendChild(carryRow);
+
+                const v1Row = document.createElement('div');
+                v1Row.className = "text-right mono text-2xl tracking-[0.3em] pr-4 text-slate-500";
+                v1Row.textContent = task.v1.padStart(len, ' ');
+                container.appendChild(v1Row);
+
+                const v2Row = document.createElement('div');
+                v2Row.className = "flex justify-end items-center border-b-2 border-slate-800 pb-2 mb-4";
+                v2Row.innerHTML = `<span class="mr-4 text-slate-400 text-xl">+</span><span class="mono text-2xl tracking-[0.3em] text-slate-800 pr-2">${task.v2.padStart(len, ' ')}</span>`;
+                container.appendChild(v2Row);
+
+                const resInp = document.createElement('input');
+                resInp.type = "text";
+                resInp.id = "user-res";
+                resInp.className = "result-input";
+                resInp.placeholder = "????";
+                resInp.maxLength = len + 1;
+                container.appendChild(resInp);
+            },
+
+            renderMultiplication(container, task) {
+                const header = document.createElement('div');
+                header.className = "text-center text-2xl mono font-bold mb-6 tracking-widest";
+                header.innerHTML = `${task.v1} <span class="text-slate-400">×</span> <span class="text-blue-600">${task.v2}</span>`;
+                container.appendChild(header);
+
+                const rowsContainer = document.createElement('div');
+                rowsContainer.className = "space-y-3 mb-6";
+                
+                task.partials.forEach((p, idx) => {
+                    const rowDiv = document.createElement('div');
+                    rowDiv.className = "flex items-center justify-end gap-1";
+                    
+                    const label = document.createElement('span');
+                    label.className = "text-xs text-slate-400 font-mono mr-2";
+                    label.textContent = `Z${idx+1}:`;
+                    rowDiv.appendChild(label);
+                    
+                    // Create single inputs for each expected char in partial
+                    // We render inputs for the length of the partial string
+                    const len = p.length;
+                    for(let i = 0; i < len; i++) {
+                        const inp = document.createElement('input');
+                        inp.type = "text";
+                        inp.className = `mult-cell cell-row-${idx}`;
+                        inp.maxLength = 1;
+                        // For UX: auto-focus next logic could be added here
+                        rowDiv.appendChild(inp);
+                    }
+                    
+                    rowsContainer.appendChild(rowDiv);
+                });
+                container.appendChild(rowsContainer);
+
+                const sumDiv = document.createElement('div');
+                sumDiv.className = "pt-4 border-t-2 border-slate-800";
+                const lbl = document.createElement('div');
+                lbl.className = "text-xs text-slate-500 uppercase font-bold mb-1";
+                lbl.textContent = "Gesamtergebnis";
+                const finalInp = document.createElement('input');
+                finalInp.id = "user-res";
+                finalInp.className = "result-input border-blue-200";
+                finalInp.placeholder = "Summe";
+                sumDiv.appendChild(lbl);
+                sumDiv.appendChild(finalInp);
+                container.appendChild(sumDiv);
+            },
+
+            check() {
+                if (this.mode === 'add') this.validateAddition();
+                else this.validateMultiplication();
+            },
+
+            validateAddition() {
+                const task = this.curriculum.add[this.level];
+                const uRes = document.getElementById('user-res').value.trim();
+                
+                const cleanURes = uRes.replace(/^0+/, '') || '0';
+                const cleanTRes = task.res.replace(/^0+/, '') || '0';
+                
+                if (cleanURes !== cleanTRes) {
+                    this.feedback("❌ Das Ergebnis unten ist falsch.", "text-red-500");
+                    document.getElementById('user-res').classList.add('shake', 'border-red-500');
+                    setTimeout(() => document.getElementById('user-res').classList.remove('shake', 'border-red-500'), 500);
+                    return;
+                }
+
+                let uCarryStr = "";
+                const len = Math.max(task.v1.length, task.res.length);
+                for (let i = len-1; i >= 0; i--) {
+                    const el = document.getElementById(`carry-${i}`);
+                    uCarryStr += (el.value.trim() || '0');
+                }
+                
+                const cleanUCarry = uCarryStr.replace(/^0+/, '') || '0';
+                const cleanTCarry = task.carry.replace(/^0+/, '') || '0';
+
+                if (cleanUCarry !== cleanTCarry) {
+                    this.feedback("⚠️ Ergebnis richtig, aber Überträge (Carry) vergessen!", "text-orange-500");
+                    document.querySelectorAll('.carry-input').forEach(el => el.classList.add('border-orange-400'));
+                    return;
+                }
+
+                this.feedback("✅ Perfekt! Alles richtig.", "text-green-600");
+                confetti({ particleCount: 100, origin: { y: 0.7 } });
+                document.getElementById('next-btn').classList.remove('hidden');
+            },
+
+            validateMultiplication() {
+                const task = this.curriculum.mult[this.level];
+                let allRowsCorrect = true;
+                
+                task.partials.forEach((p, rowIdx) => {
+                    const inputs = document.querySelectorAll(`.cell-row-${rowIdx}`);
+                    let rowVal = "";
+                    inputs.forEach(inp => rowVal += (inp.value || ""));
+                    
+                    const cleanRow = rowVal.replace(/^0+/, '') || '0';
+                    const cleanTarget = p.replace(/^0+/, '') || '0';
+                    
+                    if (cleanRow !== cleanTarget) {
+                        allRowsCorrect = false;
+                        inputs.forEach(i => i.classList.add('error'));
+                    } else {
+                        inputs.forEach(i => {
+                            i.classList.remove('error');
+                            i.classList.add('success');
+                        });
+                    }
+                });
+
+                if (!allRowsCorrect) {
+                    this.feedback("❌ Überprüfe die rot markierten Zeilen.", "text-red-500");
+                    return;
+                }
+
+                const uRes = document.getElementById('user-res').value.trim();
+                const cleanURes = uRes.replace(/^0+/, '') || '0';
+                const cleanTRes = task.res.replace(/^0+/, '') || '0';
+
+                if (cleanURes !== cleanTRes) {
+                    this.feedback("❌ Die Teilschritte stimmen, aber die Endsumme ist falsch.", "text-red-500");
+                    return;
+                }
+
+                this.feedback("✅ Hervorragend! Shift & Add verstanden.", "text-green-600");
+                confetti({ particleCount: 100, origin: { y: 0.7 } });
+                document.getElementById('next-btn').classList.remove('hidden');
+            },
+
+            feedback(msg, colorClass) {
+                const el = document.getElementById('feedback');
+                el.textContent = msg;
+                el.className = `mt-4 text-center font-bold text-lg ${colorClass}`;
+            }
+        };
+
+        app.init();
+    </script>
+</body>
+</html>
